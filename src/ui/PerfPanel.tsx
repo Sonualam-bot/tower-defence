@@ -12,9 +12,33 @@ export function PerfPanel({ snapshot, onOption, onStressTest, onRecord }: PerfPa
   const p = snapshot.perf;
   const bench = snapshot.benchmark;
   const [copied, setCopied] = useState(false);
+  const [pos, setPos] = useState({ x: 8, y: 8 });
+
+  /** Drag by the header so the panel never hides the part of the map being demoed. */
+  const startDrag = (e: React.PointerEvent) => {
+    const startX = e.clientX - pos.x;
+    const startY = e.clientY - pos.y;
+    const move = (ev: PointerEvent) => setPos({ x: ev.clientX - startX, y: ev.clientY - startY });
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
   const fpsColor = p.fps >= 45 ? 'text-emerald-400' : p.fps >= 30 ? 'text-amber-300' : 'text-red-400';
   return (
-    <div className="absolute top-2 left-2 z-10 w-60 rounded-md bg-black/75 px-3 py-2 font-mono text-[11px] leading-relaxed text-white/80 backdrop-blur">
+    <div
+      className="absolute z-10 w-60 rounded-md bg-black/75 px-3 pb-2 font-mono text-[11px] leading-relaxed text-white/80 backdrop-blur"
+      style={{ left: pos.x, top: pos.y }}
+    >
+      <div
+        onPointerDown={startDrag}
+        className="-mx-3 mb-1 cursor-move rounded-t-md border-b border-white/10 bg-white/5 px-3 py-1 text-[10px] tracking-wider text-white/40 uppercase select-none"
+        title="Drag to move"
+      >
+        ⠿ Performance
+      </div>
       <Row label="FPS" value={<span className={`text-base font-bold ${fpsColor}`}>{p.fps.toFixed(0)}</span>} />
       <Row label="Frame" value={`${p.frameMs.toFixed(1)} ms`} />
       <Row label="p95" value={`${p.p95FrameMs.toFixed(1)} ms`} />
