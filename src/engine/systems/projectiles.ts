@@ -1,3 +1,4 @@
+import { spawnEffect } from '../entities';
 import { applyDamage, applySlow } from '../rules';
 import type { SpatialGrid } from '../SpatialGrid';
 import type { GameState, Projectile } from '../types';
@@ -36,6 +37,7 @@ export function updateProjectiles(state: GameState, dt: number, grid: SpatialGri
     p.alive = false;
     p.target = null;
     if (p.splashRadius > 0) {
+      spawnEffect(state, p.x, p.y, p.splashRadius, 0.3, '#f0743e');
       if (grid) explodeGrid(state, p, grid);
       else explode(state, p);
     } else if (targetValid) {

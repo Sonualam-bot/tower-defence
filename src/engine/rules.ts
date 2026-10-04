@@ -1,6 +1,7 @@
 import { BALANCE } from '../config/balance';
 import { PADS } from '../config/map';
 import { TOWERS, type TowerLevel, type TowerType } from '../config/towers';
+import { spawnEffect } from './entities';
 import type { Enemy, GameState, Tower } from './types';
 
 /** Pure game rules. No rendering, no React, no timing. */
@@ -20,6 +21,7 @@ export function applyDamage(state: GameState, enemy: Enemy, raw: number): boolea
     return false;
   }
   enemy.alive = false;
+  spawnEffect(state, enemy.x, enemy.y, enemy.def.radius * 2.2, 0.35, enemy.def.color);
   state.money += enemy.def.reward;
   state.score += enemy.def.reward * BALANCE.scorePerReward;
   return true;

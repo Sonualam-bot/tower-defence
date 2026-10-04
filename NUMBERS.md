@@ -16,9 +16,10 @@ Machine: _fill in (CPU, browser, display Hz, power mode)_
 
 Row label = which optimizations were on:
 
-1. `brute-force + naive render` — baseline: every tower scans all 5,000 enemies; one fill + style change per enemy.
-2. `grid + naive render` — spatial grid for targeting and splash.
-3. `grid + batched render` — final: one canvas path per enemy type, batched HP bars and projectiles.
+1. `brute-force + no pooling + naive render`: baseline. Every tower scans all 5,000 enemies, and each enemy gets its own fill and style change.
+2. `grid + no pooling + naive render`: spatial grid for targeting and splash.
+3. `grid + pooling + naive render`: enemies, projectiles and effects reused from free lists. Compare the heap trend column.
+4. `grid + pooling + batched render`: final. One canvas path per enemy type, with batched HP bars and projectiles.
 
 ## Development-time observation (not a formal row)
 

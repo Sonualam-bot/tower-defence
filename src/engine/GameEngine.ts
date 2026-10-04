@@ -7,6 +7,7 @@ import { canPlace, placeTower, sellTower, sellValue, towerStats, upgradeCost, up
 import { BENCHMARK, createBenchmarkState } from './benchmark';
 import { DEFAULT_STRATEGIES, STEP_SECONDS, step, strategiesFor, type SimulationStrategies } from './simulate';
 import { SpatialGrid } from './SpatialGrid';
+import { createPools } from './entities';
 import { createGameState } from './state';
 import type { GamePhase, GameState, Speed, Tower, WaveStage } from './types';
 
@@ -25,6 +26,7 @@ export interface SelectedTowerInfo {
 
 export interface EngineOptions {
   spatialGrid: boolean;
+  pooling: boolean;
   batchedRender: boolean;
 }
 
@@ -76,7 +78,7 @@ export class GameEngine {
   private renderer: CanvasRenderer | null = null;
   private view: RenderView = { buildType: null, hoverPad: -1, hoverValid: false, selectedTower: null };
 
-  private options: EngineOptions = { spatialGrid: false, batchedRender: false };
+  private options: EngineOptions = { spatialGrid: false, pooling: false, batchedRender: false };
   private readonly grid = new SpatialGrid();
   private bench = { stage: 'idle' as BenchmarkStatus['stage'], until: 0, lastRow: null as string | null };
   private readonly rec = {
@@ -203,6 +205,7 @@ export class GameEngine {
   restart(): void {
     this.state = createGameState();
     this.state.phase = 'playing';
+    this.applyPooling();
     this.bench.stage = 'idle';
     this.accumulator = 0;
     this.view.buildType = null;
@@ -215,14 +218,21 @@ export class GameEngine {
   setOption(key: keyof EngineOptions, value: boolean): void {
     this.options[key] = value;
     this.strategies = strategiesFor(this.options.spatialGrid ? this.grid : null);
+    this.applyPooling();
     if (this.renderer) this.renderer.batched = this.options.batchedRender;
     this.perf.reset();
     this.publish();
   }
 
+  private applyPooling(): void {
+    if (!this.options.pooling) this.state.pools = null;
+    else if (!this.state.pools) this.state.pools = createPools();
+  }
+
   /** Loads the fixed stress scene (5,000 enemies, 100 towers, ~1,000 projectiles). */
   startStressTest(): void {
     this.state = createBenchmarkState();
+    this.applyPooling();
     this.accumulator = 0;
     this.view.buildType = null;
     this.view.selectedTower = null;
@@ -283,7 +293,11 @@ export class GameEngine {
     const p95 = sorted[Math.min(n - 1, Math.floor(n * 0.95))];
     const heapEnd = this.perf.stats().heapMb;
     const memory = heapEnd === null ? 'n/a' : `${rec.heapStart.toFixed(0)}→${heapEnd.toFixed(0)} MB`;
-    const label = [this.options.spatialGrid ? 'grid' : 'brute-force', this.options.batchedRender ? 'batched render' : 'naive render'].join(' + ');
+    const label = [
+      this.options.spatialGrid ? 'grid' : 'brute-force',
+      this.options.pooling ? 'pooling' : 'no pooling',
+      this.options.batchedRender ? 'batched render' : 'naive render',
+    ].join(' + ');
     const cells = [
       label,
       this.state.enemies.length,

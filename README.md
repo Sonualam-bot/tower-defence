@@ -49,15 +49,20 @@ the same build on the same scene, so before/after comparisons are like for like.
 | 1 | Targeting: 100 towers × 5,000 enemies = 500k distance checks per tick | **Uniform spatial grid** (64 px cells) rebuilt each tick with a counting sort into flat typed arrays. No allocation, O(n) rebuild. Each tower only scans cells that overlap its range. Cannon splash uses the same grid. |
 | 2 | Rendering: a `fillStyle` change and a `fill()` per enemy (~15k canvas calls per frame) | **Batched rendering**: one path and one fill per enemy type, and batched HP bars and projectiles. |
 | — | Projectile collision (1,000 × 5,000) | Avoided by design: projectiles home on a stored target (`target` + `targetId`, so a recycled enemy object can't be hit by mistake). Only splash queries other enemies, and only on impact. |
-| — | GC pressure | Hot loops use indexed `for` loops with no `map`, `filter` or closures. Dead entities are swap-removed. Telemetry uses fixed-size ring buffers. |
+| 3 | GC pressure: the stress scene fires ~1,000 projectiles/s, each a new object | **Object pooling** for enemies, projectiles and effects. Dead objects go to a free list and are re-initialized in place. A recycled enemy gets a new `id`, so stale `targetId`s are detected. |
+| — | Allocation in hot loops | Indexed `for` loops with no `map`, `filter` or closures. Swap-remove instead of `splice`. Telemetry uses fixed-size ring buffers. |
 
 **Built-in benchmark:** *Stress test* loads 5,000 enemies that loop the path and can't die, 100 towers and about
 1,000 projectiles. *Record 20s* warms up for 5 s, records every frame for 20 s, and outputs a `NUMBERS.md` row:
 FPS, p95 frame time, % of frames over 33 ms, simulation and render time, and heap trend.
 
-## Tradeoffs and what I'd do next
-- **No object pooling yet.** Swap-remove plus short-lived objects kept GC manageable in my runs. Pooling with id
-  generations is the next step if the heap trend shows GC spikes.
+## Polish
+- Placement preview with range circle: green if valid, red ✕ if invalid. Tower recoil on firing. Level pips on each tower.
+- Explosion rings for cannon splash, death pops on kills, white hit flash on damaged enemies, and a blue rim on slowed ones.
+- Each enemy looks different: a steel rim for armored, a red cross for medics, a dark core for tanks, a gold ring for the boss.
+- A "Wave N" banner that names newly unlocked enemies or warns of a boss. The screen edge pulses red when the base takes damage.
+
+## Tradeoffs
 - **No culling.** The map always fits the screen, so everything is on screen and culling would save nothing.
 - **Simple data layout.** Enemies are plain objects rather than typed arrays (struct of arrays). That's simpler to
   read, and profiling didn't call for more.

@@ -58,6 +58,23 @@ export interface Projectile {
   targetId: number;
 }
 
+/** Short-lived visual: an expanding, fading ring (explosions, deaths). */
+export interface Effect {
+  x: number;
+  y: number;
+  radius: number;
+  life: number;
+  maxLife: number;
+  color: string;
+}
+
+/** Free lists of dead objects for reuse. Null when pooling is off. */
+export interface EntityPools {
+  enemies: Enemy[];
+  projectiles: Projectile[];
+  effects: Effect[];
+}
+
 export interface GameState {
   phase: GamePhase;
   /** Stress scene: enemies loop forever and cannot die, so counts stay constant. */
@@ -81,6 +98,8 @@ export interface GameState {
   enemies: Enemy[];
   towers: Tower[];
   projectiles: Projectile[];
+  effects: Effect[];
+  pools: EntityPools | null;
   /** Tower occupying each build pad, or null. */
   padTowers: (Tower | null)[];
 

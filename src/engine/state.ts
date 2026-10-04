@@ -25,6 +25,8 @@ export function createGameState(): GameState {
     enemies: [],
     towers: [],
     projectiles: [],
+    effects: [],
+    pools: null,
     padTowers: PADS.map(() => null),
 
     nextEnemyId: 1,

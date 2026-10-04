@@ -81,6 +81,8 @@ export class CanvasRenderer {
       this.drawEnemies(state);
       this.drawProjectiles(state);
     }
+    this.drawEnemyDetails(state);
+    this.drawEffects(state);
     this.drawPlacementPreview(view);
   }
 
@@ -318,6 +320,70 @@ export class CanvasRenderer {
       ctx.fillStyle = TOWERS[type].color;
       ctx.fill();
     }
+  }
+
+  /** Silhouette details for special enemies, batched into a few paths. */
+  private drawEnemyDetails(state: GameState): void {
+    const ctx = this.ctx;
+    const enemies = state.enemies;
+    ctx.lineWidth = 2;
+    // Armored: steel rim. Boss: gold crown ring.
+    ctx.strokeStyle = '#dfe6ef';
+    ctx.beginPath();
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      if (e.type !== 'armored') continue;
+      ctx.moveTo(e.x + e.def.radius - 2, e.y);
+      ctx.arc(e.x, e.y, e.def.radius - 2, 0, Math.PI * 2);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = '#ffd43b';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      if (e.type !== 'boss') continue;
+      ctx.moveTo(e.x + e.def.radius + 3, e.y);
+      ctx.arc(e.x, e.y, e.def.radius + 3, 0, Math.PI * 2);
+    }
+    ctx.stroke();
+    // Medic: red cross.
+    ctx.fillStyle = '#e5534b';
+    ctx.beginPath();
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      if (e.type !== 'medic') continue;
+      ctx.rect(e.x - 1.5, e.y - 5, 3, 10);
+      ctx.rect(e.x - 5, e.y - 1.5, 10, 3);
+    }
+    ctx.fill();
+    // Tank: dark core.
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      if (e.type !== 'tank') continue;
+      ctx.moveTo(e.x + 6, e.y);
+      ctx.arc(e.x, e.y, 6, 0, Math.PI * 2);
+    }
+    ctx.fill();
+  }
+
+  /** Expanding, fading rings for explosions and kills. */
+  private drawEffects(state: GameState): void {
+    const ctx = this.ctx;
+    const effects = state.effects;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < effects.length; i++) {
+      const fx = effects[i];
+      const t = fx.life / fx.maxLife;
+      ctx.globalAlpha = t;
+      ctx.strokeStyle = fx.color;
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, fx.radius * (1.1 - t * 0.6), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
   }
 
   private drawProjectiles(state: GameState): void {

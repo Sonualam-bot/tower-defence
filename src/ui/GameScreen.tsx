@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { TOWER_TYPES, TOWERS } from '../config/towers';
 import { GameEngine } from '../engine/GameEngine';
+import { DamageFlash, WaveBanner } from './Feedback';
 import { GameCanvas } from './GameCanvas';
 import { EndScreen, PauseScreen, StartScreen } from './Overlays';
 import { PerfPanel } from './PerfPanel';
@@ -54,6 +55,8 @@ export function GameScreen() {
       <main className="flex min-h-0 flex-1 flex-col md:flex-row">
         <div className="relative min-h-[300px] flex-1">
           <GameCanvas engine={engine} />
+          <DamageFlash health={snap.baseHealth} />
+          <WaveBanner wave={snap.wave} active={!snap.benchmark.active && snap.phase === 'playing'} />
           {showPerf && (
             <PerfPanel
               snapshot={snap}

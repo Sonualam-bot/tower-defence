@@ -1,4 +1,4 @@
-import { removeDead } from './entities';
+import { removeDead, updateEffects } from './entities';
 import type { SpatialGrid } from './SpatialGrid';
 import { updateEnemies } from './systems/movement';
 import { updateProjectiles } from './systems/projectiles';
@@ -33,5 +33,6 @@ export function step(state: GameState, dt: number, strategies: SimulationStrateg
   updateTowers(state, dt, strategies.findTarget);
   updateProjectiles(state, dt, strategies.grid);
   removeDead(state);
+  updateEffects(state, dt);
   if (state.baseHealth <= 0) state.phase = 'game-over';
 }

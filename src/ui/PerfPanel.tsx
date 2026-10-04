@@ -28,6 +28,7 @@ export function PerfPanel({ snapshot, onOption, onStressTest, onRecord }: PerfPa
 
       <div className="mt-2 border-t border-white/10 pt-2">
         <Toggle label="Spatial grid" checked={snapshot.options.spatialGrid} onChange={(v) => onOption('spatialGrid', v)} />
+        <Toggle label="Object pooling" checked={snapshot.options.pooling} onChange={(v) => onOption('pooling', v)} />
         <Toggle label="Batched render" checked={snapshot.options.batchedRender} onChange={(v) => onOption('batchedRender', v)} />
       </div>
 

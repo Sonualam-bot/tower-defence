@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BALANCE } from '../config/balance';
 import { PADS, PATH } from '../config/map';
 import { TOWERS } from '../config/towers';
-import { spawnEnemy } from './entities';
+import { createPools, removeDead, spawnEnemy } from './entities';
 import { PathGeometry } from './path';
 import { applyDamage, damageAfterArmor, placeTower, sellTower, upgradeTower } from './rules';
 import { STEP_SECONDS, step } from './simulate';
@@ -119,5 +119,34 @@ describe('simulation', () => {
     run(b, 40);
     expect(a.score).toBe(b.score);
     expect(a.enemies.length).toBe(b.enemies.length);
+  });
+});
+
+describe('object pooling', () => {
+  it('reuses dead enemies with a fresh id so stale references are detectable', () => {
+    const state = playingState();
+    state.pools = createPools();
+    const first = spawnEnemy(state, 'grunt', 1);
+    const oldId = first.id;
+    applyDamage(state, first, 1000);
+    removeDead(state);
+    const second = spawnEnemy(state, 'tank', 1);
+    expect(second).toBe(first); // same object, recycled
+    expect(second.id).not.toBe(oldId);
+    expect(second.alive).toBe(true);
+    expect(second.hp).toBe(second.maxHp);
+  });
+
+  it('gives the same game result with and without pooling', () => {
+    const results = [false, true].map((pooled) => {
+      const s = playingState();
+      if (pooled) s.pools = createPools();
+      s.money = 1000;
+      placeTower(s, 'cannon', 3);
+      placeTower(s, 'archer', 5);
+      run(s, 60);
+      return [s.score, s.money, s.enemies.length, s.wave];
+    });
+    expect(results[1]).toEqual(results[0]);
   });
 });
