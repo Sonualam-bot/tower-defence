@@ -1,5 +1,6 @@
 import { BASE_POSITION, PAD_SIZE, PADS, PATH, PATH_WIDTH, WORLD_HEIGHT, WORLD_WIDTH } from '../config/map';
-import { TOWERS, type TowerType } from '../config/towers';
+import { ENEMIES, type EnemyType } from '../config/enemies';
+import { TOWER_TYPES, TOWERS, type TowerType } from '../config/towers';
 import type { GameState, Tower } from '../engine/types';
 
 /** UI-only state the renderer needs: what the pointer is doing and what is selected. */
@@ -10,6 +11,8 @@ export interface RenderView {
   hoverValid: boolean;
   selectedTower: Tower | null;
 }
+
+const ENEMY_TYPES = Object.keys(ENEMIES) as EnemyType[];
 
 const COLORS = {
   background: '#11161d',
@@ -34,6 +37,8 @@ export class CanvasRenderer {
   private offsetX = 0;
   private offsetY = 0;
   private dpr = 1;
+  /** Optimized path: one fill per enemy type instead of one per enemy. */
+  batched = false;
 
   constructor(canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext('2d', { alpha: false });
@@ -69,8 +74,13 @@ export class CanvasRenderer {
     this.drawMap(state);
     this.drawRangeIndicators(view);
     this.drawTowers(state);
-    this.drawEnemies(state);
-    this.drawProjectiles(state);
+    if (this.batched) {
+      this.drawEnemiesBatched(state);
+      this.drawProjectilesBatched(state);
+    } else {
+      this.drawEnemies(state);
+      this.drawProjectiles(state);
+    }
     this.drawPlacementPreview(view);
   }
 
@@ -237,6 +247,76 @@ export class CanvasRenderer {
         ctx.fillStyle = frac > 0.35 ? COLORS.hp : COLORS.hpLow;
         ctx.fillRect(e.x - w / 2, top, w * frac, 3);
       }
+    }
+  }
+
+  /**
+   * Batched: one path + one fill per enemy type, one path for all HP bar backs and fronts.
+   * Canvas state changes drop from ~3 per enemy to a handful per frame.
+   */
+  private drawEnemiesBatched(state: GameState): void {
+    const ctx = this.ctx;
+    const enemies = state.enemies;
+    for (let t = 0; t < ENEMY_TYPES.length; t++) {
+      const type = ENEMY_TYPES[t];
+      ctx.beginPath();
+      let any = false;
+      for (let i = 0; i < enemies.length; i++) {
+        const e = enemies[i];
+        if (e.type !== type) continue;
+        const r = e.def.radius;
+        ctx.moveTo(e.x + r, e.y);
+        ctx.arc(e.x, e.y, r, 0, Math.PI * 2);
+        any = true;
+      }
+      if (any) {
+        ctx.fillStyle = ENEMIES[type].color;
+        ctx.fill();
+      }
+    }
+    ctx.beginPath();
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      if (e.hitFlash <= 0) continue;
+      ctx.moveTo(e.x + e.def.radius, e.y);
+      ctx.arc(e.x, e.y, e.def.radius, 0, Math.PI * 2);
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fill();
+
+    ctx.fillStyle = COLORS.hpBack;
+    ctx.beginPath();
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      if (e.hp >= e.maxHp) continue;
+      const w = e.def.radius * 2;
+      ctx.rect(e.x - w / 2, e.y - e.def.radius - 6, w, 3);
+    }
+    ctx.fill();
+    ctx.fillStyle = COLORS.hp;
+    ctx.beginPath();
+    for (let i = 0; i < enemies.length; i++) {
+      const e = enemies[i];
+      if (e.hp >= e.maxHp) continue;
+      const w = e.def.radius * 2;
+      ctx.rect(e.x - w / 2, e.y - e.def.radius - 6, w * Math.max(0, e.hp / e.maxHp), 3);
+    }
+    ctx.fill();
+  }
+
+  private drawProjectilesBatched(state: GameState): void {
+    const ctx = this.ctx;
+    const projectiles = state.projectiles;
+    for (let t = 0; t < TOWER_TYPES.length; t++) {
+      const type = TOWER_TYPES[t];
+      ctx.beginPath();
+      for (let i = 0; i < projectiles.length; i++) {
+        const p = projectiles[i];
+        if (p.towerType !== type) continue;
+        ctx.rect(p.x - p.radius, p.y - p.radius, p.radius * 2, p.radius * 2);
+      }
+      ctx.fillStyle = TOWERS[type].color;
+      ctx.fill();
     }
   }
 

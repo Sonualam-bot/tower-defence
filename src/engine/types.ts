@@ -60,6 +60,8 @@ export interface Projectile {
 
 export interface GameState {
   phase: GamePhase;
+  /** Stress scene: enemies loop forever and cannot die, so counts stay constant. */
+  benchmark: boolean;
   speed: Speed;
   /** Simulated seconds since the run started. */
   time: number;

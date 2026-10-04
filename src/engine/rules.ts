@@ -15,6 +15,10 @@ export function applyDamage(state: GameState, enemy: Enemy, raw: number): boolea
   enemy.hp -= damageAfterArmor(raw, enemy.armor);
   enemy.hitFlash = 0.08;
   if (enemy.hp > 0) return false;
+  if (state.benchmark) {
+    enemy.hp = enemy.maxHp;
+    return false;
+  }
   enemy.alive = false;
   state.money += enemy.def.reward;
   state.score += enemy.def.reward * BALANCE.scorePerReward;

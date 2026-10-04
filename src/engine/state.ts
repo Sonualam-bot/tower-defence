@@ -6,6 +6,7 @@ import type { GameState } from './types';
 export function createGameState(): GameState {
   return {
     phase: 'menu',
+    benchmark: false,
     speed: 1,
     time: 0,
 

@@ -54,7 +54,14 @@ export function GameScreen() {
       <main className="flex min-h-0 flex-1 flex-col md:flex-row">
         <div className="relative min-h-[300px] flex-1">
           <GameCanvas engine={engine} />
-          {showPerf && <PerfPanel snapshot={snap} />}
+          {showPerf && (
+            <PerfPanel
+              snapshot={snap}
+              onOption={(k, v) => engine.setOption(k, v)}
+              onStressTest={() => engine.startStressTest()}
+              onRecord={() => engine.recordBenchmark()}
+            />
+          )}
           {snap.phase === 'menu' && <StartScreen onStart={() => engine.start()} />}
           {snap.phase === 'paused' && <PauseScreen onResume={() => engine.togglePause()} onRestart={() => engine.restart()} />}
           {(snap.phase === 'game-over' || snap.phase === 'victory') && (
